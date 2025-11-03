@@ -13,46 +13,63 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection (replace with your MongoDB URI)
+// MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// Simple User Schema (for demo)
+// User Schema
 const userSchema = new mongoose.Schema({
-  email: String,
+  email: { type: String, unique: true },
   password: String,
 });
 const User = mongoose.model("User", userSchema);
 
-// Routes
+// --- ROUTES ---
+
+// Test route
 app.get("/", (req, res) => {
-  res.send("Markly backend is running 🚀");
+  res.send("🚀 Markly backend is running");
 });
 
-// Login route
+// ✅ Register route
+app.post("/api/auth/register", async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // Create new user
+    const newUser = new User({ email, password });
+    await newUser.save();
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: { email: newUser.email },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
+// ✅ Login route
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
     const user = await User.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.password !== password) {
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.password !== password)
       return res.status(401).json({ message: "Invalid password" });
-    }
 
-    res.json({
-      message: "Login successful",
-      user: { email: user.email },
-    });
+    res.json({ message: "Login successful", user: { email: user.email } });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }
