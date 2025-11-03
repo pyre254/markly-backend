@@ -1,81 +1,27 @@
-// server.js
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import authRoutes from "./routes/auth.js";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
+// Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// User Schema
-const userSchema = new mongoose.Schema({
-  email: { type: String, unique: true },
-  password: String,
-});
-const User = mongoose.model("User", userSchema);
-
-// --- ROUTES ---
-
-// Test route
-app.get("/", (req, res) => {
-  res.send("🚀 Markly backend is running");
-});
-
-// ✅ Register route
-app.post("/api/auth/register", async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
-    }
-
-    // Create new user
-    const newUser = new User({ email, password });
-    await newUser.save();
-
-    res.status(201).json({
-      message: "User registered successfully",
-      user: { email: newUser.email },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error", error });
-  }
-});
-
-// ✅ Login route
-app.post("/api/auth/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    const user = await User.findOne({ email });
-
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (user.password !== password)
-      return res.status(401).json({ message: "Invalid password" });
-
-    res.json({ message: "Login successful", user: { email: user.email } });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-});
+// Routes
+app.get("/", (req, res) => res.send("Markly backend is running 🚀"));
+app.use("/api/auth", authRoutes);
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
