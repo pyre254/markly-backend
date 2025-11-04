@@ -1,28 +1,33 @@
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
-import dotenv from "dotenv";
+// server.js — CommonJS version for Render
 
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const cors = require("cors");
+
+// Load .env
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Middleware
 app.use(express.json());
+app.use(cors());
 
-const PORT = process.env.PORT || 5000;
-
-// MongoDB connection
+// ✅ MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// Simple route
-app.get("/", (req, res) => res.send("🚀 Markly backend running"));
-
-// Register route
-app.post("/api/auth/register", async (req, res) => {
-  res.json({ message: "Register route working" });
+// Simple route to confirm server is running
+app.get("/", (req, res) => {
+  res.send("🚀 Markly backend is running");
 });
 
+// Auth routes
+app.use("/api/auth", require("./routes/auth"));
+
+// Start server
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
